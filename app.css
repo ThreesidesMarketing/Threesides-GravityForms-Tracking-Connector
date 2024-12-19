@@ -1,3 +1,16 @@
 /**
  * Add your custom CSS styles here.
  */
+
+.gfield--type-threesides_ga4_client_id_tracking_field,
+.gfield--type-threesides_fbclid_tracking_field,
+.gfield--type-threesides_utms_tracking_field,
+.gfield--type-threesides_gclid_tracking_field {
+  .gfield-admin-wrapper {
+    border: 1px dashed;
+    padding: 1rem;
+    border-radius: 3px;
+    background: #f5f5f5;
+    opacity: 0.6;
+  }
+}

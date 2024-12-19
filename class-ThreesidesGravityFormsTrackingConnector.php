@@ -64,7 +64,7 @@ class ThreesidesGravityFormsTrackingConnector extends GFAddOn
     {
         $scripts = array(
             array(
-                'handle'  => 'app',
+                'handle'  => 'threesides-gravity-forms-tracking',
                 'src'     => $this->get_base_url() . '/app.js',
                 'version' => $this->_version,
                 'deps'    => array('jquery'),
@@ -76,5 +76,26 @@ class ThreesidesGravityFormsTrackingConnector extends GFAddOn
         );
 
         return array_merge(parent::scripts(), $scripts);
+    }
+
+    /**
+     * Include styles when the form contains a 'simple' type field.
+     *
+     * @return array
+     */
+    public function styles()
+    {
+        $styles = array(
+            array(
+                'handle'  => 'threesides-gravity-forms-tracking',
+                'src'     => $this->get_base_url() . '/app.css',
+                'version' => $this->_version,
+                'enqueue' => array(
+                    array('field_types' => array('threesides_ga4_client_id_tracking_field', 'threesides_fbclid_tracking_field', 'threesides_utms_tracking_field', 'threesides_gclid_tracking_field')),
+                )
+            )
+        );
+
+        return array_merge(parent::styles(), $styles);
     }
 }
