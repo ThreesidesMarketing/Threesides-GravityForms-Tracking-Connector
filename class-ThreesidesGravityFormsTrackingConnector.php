@@ -40,10 +40,10 @@ class ThreesidesGravityFormsTrackingConnector extends GFAddOn
         parent::pre_init();
 
         if ($this->is_gravityforms_supported() && class_exists('GF_Field')) {
-            require_once('class-ThreesidesGA4ClientIdTrackingField.php');
-            require_once('class-ThreesidesFBCLIDTrackingField.php');
-            require_once('class-ThreesidesUTMsTrackingField.php');
-            require_once('class-ThreesidesGCLIDTrackingField.php');
+            require_once('class-ThreesidesGa4ClientIdTrackingField.php');
+            require_once('class-ThreesidesFbclidTrackingField.php');
+            require_once('class-ThreesidesUtmsTrackingField.php');
+            require_once('class-ThreesidesGclidTrackingField.php');
         }
     }
 
