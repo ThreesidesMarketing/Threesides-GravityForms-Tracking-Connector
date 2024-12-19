@@ -24,7 +24,7 @@ addEventListener("DOMContentLoaded", function () {
    * Set the GA4 Client ID value to the hidden field.
    */
   const ga4_fields = document.querySelectorAll(
-    ".ga4_client_id input[type=text]"
+    ".ginput_container_threesides_ga4_client_id_tracking_field input[type=text]"
   );
   if (get_ga_clientid() !== "" && ga4_fields.length > 0) {
     for (let i = 0; i < ga4_fields.length; i++) {
@@ -44,7 +44,9 @@ addEventListener("DOMContentLoaded", function () {
 
   /** Check for GCLID cookie, and add to form if found. */
   const gclid_cookie = get_cookie("_tsm_gclid");
-  const gclid_field = document.querySelectorAll(".gclid input[type=text]");
+  const gclid_field = document.querySelectorAll(
+    ".ginput_container_threesides_gclid_tracking_field input[type=text]"
+  );
   if (gclid_cookie && gclid_field.length > 0) {
     gclid_field[0].value = gclid_cookie;
   }
@@ -61,7 +63,9 @@ addEventListener("DOMContentLoaded", function () {
 
   /** Check for FBCLID cookie, and add to form if found. */
   const fbclid_cookie = get_cookie("_tsm_fbclid");
-  const fbclid_field = document.querySelectorAll(".fbclid input[type=text]");
+  const fbclid_field = document.querySelectorAll(
+    ".ginput_container_threesides_fbclid_tracking_field input[type=text]"
+  );
   if (fbclid_cookie && fbclid_field.length > 0) {
     fbclid_field[0].value = fbclid_cookie;
   }
@@ -90,7 +94,9 @@ addEventListener("DOMContentLoaded", function () {
 
   /** Check for UTM cookie, and add to form if found. */
   const utm_cookie = get_cookie("_tsm_utm");
-  const utm_field = document.querySelectorAll(".utm input[type=text]");
+  const utm_field = document.querySelectorAll(
+    ".ginput_container_threesides_utms_tracking_field input[type=text]"
+  );
   if (utm_cookie && utm_field.length > 0) {
     utm_field[0].value = utm_cookie;
   }

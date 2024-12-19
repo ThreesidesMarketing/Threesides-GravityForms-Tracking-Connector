@@ -1,4 +1,4 @@
-# Gravity Forms and GA4 Tracking Connector
+# Threesides Gravity Forms Tracking Connector
 
 Plugin for Gravity Forms that allows you to collect GA4 tracking data for offline conversion tracking.
 
