@@ -1,112 +1,97 @@
 function get_cookie(name) {
-  var cookie = {};
-  document.cookie.split(";").forEach(function (el) {
-    var splitCookie = el.split("=");
-    var key = splitCookie[0].trim();
-    var value = splitCookie[1];
-    cookie[key] = value;
-  });
-  return cookie[name];
+  const cookies = document.cookie.split(";").reduce((acc, el) => {
+    const [key, value] = el.split("=").map((item) => item.trim());
+    if (key && value) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+  return cookies[name] || null; // Return null if the cookie is not found
+}
+
+function sanitize(value) {
+  const div = document.createElement("div");
+  div.textContent = value;
+  return div.innerHTML; // Escapes any potentially harmful characters
+}
+
+/**
+ *  Clear cookies once Gravity Form has been submitted.
+ */
+function clear_cookie(name) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=${window.location.hostname}`;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.${window.location.hostname}`;
 }
 
 /**
  * Add GA4 Client ID to the hidden field.
  */
 addEventListener("DOMContentLoaded", function () {
-  function get_ga_clientid() {
-    if (get_cookie("_ga") === undefined) {
-      return "";
-    }
-    return get_cookie("_ga").substring(6);
-  }
-
-  /**
-   * Set the GA4 Client ID value to the hidden field.
-   */
+  // Handle GA4 Client ID
   const ga4_fields = document.querySelectorAll(
     ".ginput_container_threesides_ga4_client_id_tracking_field input[type=hidden]"
   );
-  if (get_ga_clientid() !== "" && ga4_fields.length > 0) {
-    for (let i = 0; i < ga4_fields.length; i++) {
-      ga4_fields[i].value = get_ga_clientid();
-    }
+  const ga_client_id = get_cookie("_ga") ? get_cookie("_ga").substring(6) : "";
+  if (ga_client_id && ga4_fields.length > 0) {
+    ga4_fields.forEach((field) => {
+      field.value = ga_client_id;
+    });
   }
-});
 
-/**
- * Check for GCLID url parameter, and store cookie if found to then add to form.
- */
-addEventListener("DOMContentLoaded", function () {
-  const gclid = new URL(window.location.href).searchParams.get("gclid");
+  // Handle GCLID
+  const gclid = sanitize(new URL(window.location.href).searchParams.get("gclid") || "");
   if (gclid) {
     document.cookie = `_tsm_gclid=${gclid}; path=/; domain=.${window.location.hostname}; max-age=31536000`;
   }
-
-  /** Check for GCLID cookie, and add to form if found. */
   const gclid_cookie = get_cookie("_tsm_gclid");
-  const gclid_field = document.querySelectorAll(
+  const gclid_fields = document.querySelectorAll(
     ".ginput_container_threesides_gclid_tracking_field input[type=hidden]"
   );
-  if (gclid_cookie && gclid_field.length > 0) {
-    gclid_field[0].value = gclid_cookie;
+  if (gclid_cookie && gclid_fields.length > 0) {
+    gclid_fields.forEach((field) => {
+      field.value = gclid_cookie;
+    });
   }
-});
 
-/**
- * Check for FBCLID url parameter, and store cookie if found to then add to form.
- */
-addEventListener("DOMContentLoaded", function () {
-  const fbclid = new URL(window.location.href).searchParams.get("fbclid");
+  // Handle FBCLID
+  const fbclid = sanitize(new URL(window.location.href).searchParams.get("fbclid") || "");
   if (fbclid) {
     document.cookie = `_tsm_fbclid=${fbclid}; path=/; domain=.${window.location.hostname}; max-age=31536000`;
   }
-
-  /** Check for FBCLID cookie, and add to form if found. */
   const fbclid_cookie = get_cookie("_tsm_fbclid");
-  const fbclid_field = document.querySelectorAll(
+  const fbclid_fields = document.querySelectorAll(
     ".ginput_container_threesides_fbclid_tracking_field input[type=hidden]"
   );
-  if (fbclid_cookie && fbclid_field.length > 0) {
-    fbclid_field[0].value = fbclid_cookie;
+  if (fbclid_cookie && fbclid_fields.length > 0) {
+    fbclid_fields.forEach((field) => {
+      field.value = fbclid_cookie;
+    });
   }
-});
 
-/**
- * Check for UTM parameters, and store cookie if found to then add to form.
- */
-addEventListener("DOMContentLoaded", function () {
-  const utm_source = new URL(window.location.href).searchParams.get(
-    "utm_source"
-  );
-  const utm_medium = new URL(window.location.href).searchParams.get(
-    "utm_medium"
-  );
-  const utm_campaign = new URL(window.location.href).searchParams.get(
-    "utm_campaign"
-  );
-  const utm_content = new URL(window.location.href).searchParams.get(
-    "utm_content"
-  );
-  const utm_term = new URL(window.location.href).searchParams.get("utm_term");
+  // Handle UTM Parameters
+  const utm_source = sanitize(new URL(window.location.href).searchParams.get("utm_source") || "");
+  const utm_medium = sanitize(new URL(window.location.href).searchParams.get("utm_medium") || "");
+  const utm_campaign = sanitize(new URL(window.location.href).searchParams.get("utm_campaign") || "");
+  const utm_content = sanitize(new URL(window.location.href).searchParams.get("utm_content") || "");
+  const utm_term = sanitize(new URL(window.location.href).searchParams.get("utm_term") || "");
   if (utm_source || utm_medium || utm_campaign || utm_content || utm_term) {
     document.cookie = `_tsm_utm=${utm_source}|${utm_medium}|${utm_campaign}|${utm_content}|${utm_term}; path=/; domain=.${window.location.hostname}; max-age=31536000`;
   }
-
-  /** Check for UTM cookie, and add to form if found. */
   const utm_cookie = get_cookie("_tsm_utm");
-  const utm_field = document.querySelectorAll(
+  const utm_fields = document.querySelectorAll(
     ".ginput_container_threesides_utms_tracking_field input[type=hidden]"
   );
-  if (utm_cookie && utm_field.length > 0) {
-    utm_field[0].value = utm_cookie;
+  if (utm_cookie && utm_fields.length > 0) {
+    utm_fields.forEach((field) => {
+      field.value = utm_cookie;
+    });
   }
 });
 
-/**
- *  Clear cookies once Gravity Form has been submitted.
- */
+
+
 addEventListener("gform_confirmation_loaded", function () {
-  document.cookie = `_tsm_gclid=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.${window.location.hostname}`;
-  document.cookie = `_tsm_fbclid=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.${window.location.hostname}`;
-  document.cookie = `_tsm_utm=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.${window.location.hostname}`;
+  clear_cookie("_tsm_gclid");
+  clear_cookie("_tsm_fbclid");
+  clear_cookie("_tsm_utm");
 });

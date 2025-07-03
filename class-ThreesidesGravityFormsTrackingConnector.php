@@ -52,6 +52,14 @@ class ThreesidesGravityFormsTrackingConnector extends GFAddOn
         parent::init_admin();
     }
 
+    public function init_frontend()
+    {
+        parent::init_frontend();
+
+        // Register the field types so they can be used in forms.
+        wp_enqueue_script('threesides-gravity-forms-tracking', $this->get_base_url() . '/app.js', array('jquery'), $this->_version, true);
+    }
+
 
     // # SCRIPTS & STYLES -----------------------------------------------------------------------------------------------
 
