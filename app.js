@@ -6,13 +6,13 @@ function get_cookie(name) {
     }
     return acc;
   }, {});
-  return cookies[name] || null; // Return null if the cookie is not found
+  return cookies[name] || null;
 }
 
 function sanitize(value) {
   const div = document.createElement("div");
   div.textContent = value;
-  return div.innerHTML; // Escapes any potentially harmful characters
+  return div.innerHTML;
 }
 
 /**
@@ -39,7 +39,9 @@ addEventListener("DOMContentLoaded", function () {
   }
 
   // Handle GCLID
-  const gclid = sanitize(new URL(window.location.href).searchParams.get("gclid") || "");
+  const gclid = sanitize(
+    new URL(window.location.href).searchParams.get("gclid") || ""
+  );
   if (gclid) {
     document.cookie = `_tsm_gclid=${gclid}; path=/; domain=.${window.location.hostname}; max-age=31536000`;
   }
@@ -54,7 +56,9 @@ addEventListener("DOMContentLoaded", function () {
   }
 
   // Handle FBCLID
-  const fbclid = sanitize(new URL(window.location.href).searchParams.get("fbclid") || "");
+  const fbclid = sanitize(
+    new URL(window.location.href).searchParams.get("fbclid") || ""
+  );
   if (fbclid) {
     document.cookie = `_tsm_fbclid=${fbclid}; path=/; domain=.${window.location.hostname}; max-age=31536000`;
   }
@@ -69,11 +73,21 @@ addEventListener("DOMContentLoaded", function () {
   }
 
   // Handle UTM Parameters
-  const utm_source = sanitize(new URL(window.location.href).searchParams.get("utm_source") || "");
-  const utm_medium = sanitize(new URL(window.location.href).searchParams.get("utm_medium") || "");
-  const utm_campaign = sanitize(new URL(window.location.href).searchParams.get("utm_campaign") || "");
-  const utm_content = sanitize(new URL(window.location.href).searchParams.get("utm_content") || "");
-  const utm_term = sanitize(new URL(window.location.href).searchParams.get("utm_term") || "");
+  const utm_source = sanitize(
+    new URL(window.location.href).searchParams.get("utm_source") || ""
+  );
+  const utm_medium = sanitize(
+    new URL(window.location.href).searchParams.get("utm_medium") || ""
+  );
+  const utm_campaign = sanitize(
+    new URL(window.location.href).searchParams.get("utm_campaign") || ""
+  );
+  const utm_content = sanitize(
+    new URL(window.location.href).searchParams.get("utm_content") || ""
+  );
+  const utm_term = sanitize(
+    new URL(window.location.href).searchParams.get("utm_term") || ""
+  );
   if (utm_source || utm_medium || utm_campaign || utm_content || utm_term) {
     document.cookie = `_tsm_utm=${utm_source}|${utm_medium}|${utm_campaign}|${utm_content}|${utm_term}; path=/; domain=.${window.location.hostname}; max-age=31536000`;
   }
@@ -87,8 +101,6 @@ addEventListener("DOMContentLoaded", function () {
     });
   }
 });
-
-
 
 addEventListener("gform_confirmation_loaded", function () {
   clear_cookie("_tsm_gclid");
