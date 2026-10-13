@@ -244,12 +244,13 @@ class ThreesidesTrackingField extends GF_Field
      */
     public function get_field_input($form, $value = '', $entry = null)
     {
-        $form_id        = absint(rgar($form, 'id'));
-        $field_id       = absint($this->id);
-        $is_form_editor = $this->is_form_editor();
-        $use_short_id   = $is_form_editor || $this->is_entry_detail() || $form_id == 0;
-        $values         = is_array($value) ? $value : array();
-        $markup         = '';
+        $form_id         = absint(rgar($form, 'id'));
+        $field_id        = absint($this->id);
+        $is_form_editor  = $this->is_form_editor();
+        $is_entry_detail = $this->is_entry_detail();
+        $use_short_id    = $is_form_editor || $is_entry_detail || $form_id == 0;
+        $values          = is_array($value) ? $value : array();
+        $markup          = '';
 
         foreach ($this->get_entry_inputs() as $input) {
             $suffix = self::input_suffix($input['id']);
@@ -272,7 +273,9 @@ class ThreesidesTrackingField extends GF_Field
                 continue;
             }
 
-            if ($is_hidden) {
+            // Entry edit renders every input: core saves all of them on Update, so a signal switched
+            // off after this entry was collected would otherwise be overwritten with ''.
+            if ($is_hidden && ! $is_entry_detail) {
                 continue;
             }
 

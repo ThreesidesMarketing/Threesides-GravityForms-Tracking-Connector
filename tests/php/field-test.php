@@ -49,6 +49,10 @@ check('frontend content is the bare field', $field->get_field_content('', false,
 $edit_field = make_field(array('test_context' => 'entry_detail'));
 $edit       = $edit_field->get_field_input($form, array('5.3' => 'G1'));
 check_contains('entry edit keeps values so updates do not wipe them', $edit, "id='input_5_3' value='G1'");
+$off_inputs = ThreesidesTrackingField::default_inputs(5);
+$off_inputs[1]['isHidden'] = true; // switched off after this entry was collected
+$edit_off = make_field(array('test_context' => 'entry_detail', 'inputs' => $off_inputs));
+check_contains('entry edit keeps signals switched off later', $edit_off->get_field_input($form, array('5.2' => 'S1')), "id='input_5_2' value='S1'");
 check('entry edit uses parent chrome', $edit_field->get_field_content('', false, $form), 'PARENT_CONTENT');
 
 // # Editor markup --------------------------------------------------------------------------------
