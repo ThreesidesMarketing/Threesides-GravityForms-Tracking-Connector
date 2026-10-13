@@ -8,6 +8,8 @@
   var api = factory();
   if (typeof window === "undefined") {
     module.exports = api;
+  } else {
+    api.boot(window, document);
   }
 })(function () {
   "use strict";
@@ -232,6 +234,168 @@
     }
   }
 
+  // # SIGNALS ------------------------------------------------------------------------------------
+
+  function clickValue(state, name) {
+    var click = state.clicks[name];
+    return click && typeof click.value === "string" ? click.value : "";
+  }
+
+  function resolveFbc(state, cookies) {
+    var fbclid = state.clicks.fbclid;
+    var existing = cookies._fbc || "";
+    if (fbclid && fbclid.value && existing.indexOf("." + fbclid.value) === -1) {
+      return "fb.1." + fbclid.ts + "." + fbclid.value;
+    }
+    return existing;
+  }
+
+  function resolveSignals(state, cookies) {
+    var touch = state.touch || {};
+    var signals = {
+      ga_client_id: parseGaClientId(cookies._ga),
+      ga_session_id: parseGaSessionId(findGaSessionCookie(cookies)),
+      gclid: clickValue(state, "gclid") || parseGclCookie(cookies._gcl_aw),
+      gbraid: clickValue(state, "gbraid"),
+      wbraid: clickValue(state, "wbraid"),
+      fbc: resolveFbc(state, cookies),
+      fbp: cookies._fbp || "",
+      msclkid: clickValue(state, "msclkid"),
+      li_fat_id: clickValue(state, "li_fat_id"),
+      ttclid: clickValue(state, "ttclid"),
+    };
+    TOUCH_KEYS.forEach(function (key) {
+      signals[key] = typeof touch[key] === "string" ? touch[key] : "";
+    });
+    return signals;
+  }
+
+  function legacyValues(state, signals) {
+    var utms = [
+      signals.utm_source, signals.utm_medium, signals.utm_campaign, signals.utm_content, signals.utm_term,
+    ];
+    return {
+      ga4: signals.ga_client_id,
+      gclid: signals.gclid,
+      fbclid: clickValue(state, "fbclid"),
+      utms: utms.join("") ? utms.join("|") : "",
+    };
+  }
+
+  // # FILLING ------------------------------------------------------------------------------------
+
+  function fillEmpty(input, value) {
+    if (input && input.value === "" && value) input.value = value;
+  }
+
+  function forEachNode(nodes, callback) {
+    Array.prototype.forEach.call(nodes, callback);
+  }
+
+  /** Fills empty inputs only, so multi-page and save-and-continue values are never overwritten. */
+  function fillFields(root, state, cookies) {
+    var signals = resolveSignals(state, cookies);
+    var legacy = legacyValues(state, signals);
+
+    forEachNode(root.querySelectorAll("input[data-tsm-signal]"), function (input) {
+      fillEmpty(input, signals[input.getAttribute("data-tsm-signal")]);
+    });
+
+    Object.keys(LEGACY_SELECTORS).forEach(function (name) {
+      forEachNode(root.querySelectorAll(LEGACY_SELECTORS[name]), function (input) {
+        fillEmpty(input, legacy[name]);
+      });
+    });
+  }
+
+  // # COOKIE WRITING -----------------------------------------------------------------------------
+
+  function candidateDomains(hostname) {
+    var host = String(hostname || "").toLowerCase();
+    if (host.indexOf(".") === -1 || host.indexOf(":") !== -1 || /^[\d.]+$/.test(host)) return [];
+    var labels = host.split(".");
+    var domains = [];
+    for (var i = labels.length - 2; i >= 0; i--) {
+      domains.push(labels.slice(i).join("."));
+    }
+    return domains;
+  }
+
+  /** Finds the broadest domain the browser accepts (it rejects public suffixes like com.au). */
+  function findCookieDomain(doc, hostname, secure) {
+    var candidates = candidateDomains(hostname);
+    for (var i = 0; i < candidates.length; i++) {
+      var attributes = "; path=/; SameSite=Lax; domain=" + candidates[i] + (secure ? "; Secure" : "");
+      doc.cookie = "_tsm_probe=1" + attributes;
+      if (parseCookies(doc.cookie)._tsm_probe === "1") {
+        doc.cookie = "_tsm_probe=; max-age=0" + attributes;
+        return candidates[i];
+      }
+    }
+    return "";
+  }
+
+  function writeState(doc, encoded, hostname, secure) {
+    var domain = findCookieDomain(doc, hostname, secure);
+    doc.cookie = COOKIE_NAME + "=" + encoded + "; path=/; max-age=" + MAX_AGE + "; SameSite=Lax" +
+      (domain ? "; domain=" + domain : "") + (secure ? "; Secure" : "");
+  }
+
+  // # BOOT ---------------------------------------------------------------------------------------
+
+  /** Cookie access throws in sandboxed iframes and some privacy modes; treat that as no cookies. */
+  function readCookies(doc) {
+    try {
+      return parseCookies(doc.cookie);
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function boot(win, doc) {
+    var location = win.location;
+    var secure = location.protocol === "https:";
+    var cookies = readCookies(doc);
+    var now = Date.now();
+    var state = decodeState(cookies[COOKIE_NAME]) || migrateLegacy(cookies, now) || emptyState();
+
+    state = updateState(state, location.href, doc.referrer, now);
+
+    var encoded = fitState(state);
+    if (hasData(state) && encoded !== cookies[COOKIE_NAME]) {
+      try {
+        writeState(doc, encoded, location.hostname, secure);
+      } catch (e) {
+        // Cookies blocked: this page view can still fill forms from the URL.
+      }
+    }
+
+    var fillDocument = function () {
+      fillFields(doc, state, readCookies(doc));
+    };
+
+    if (doc.readyState === "loading") {
+      doc.addEventListener("DOMContentLoaded", fillDocument);
+    } else {
+      fillDocument();
+    }
+
+    // AJAX-rendered forms and multi-page navigation.
+    doc.addEventListener("gform/post_render", fillDocument);
+
+    // Re-read cookies at submit: GA4 and the Meta Pixel may set _ga/_fbp after page load.
+    doc.addEventListener(
+      "submit",
+      function (event) {
+        var form = event.target;
+        if (form && typeof form.id === "string" && form.id.indexOf("gform_") === 0) {
+          fillFields(form, state, readCookies(doc));
+        }
+      },
+      true
+    );
+  }
+
   return {
     COOKIE_NAME: COOKIE_NAME,
     MAX_COOKIE_LENGTH: MAX_COOKIE_LENGTH,
@@ -250,5 +414,11 @@
     encodeState: encodeState,
     fitState: fitState,
     decodeState: decodeState,
+    resolveSignals: resolveSignals,
+    legacyValues: legacyValues,
+    fillFields: fillFields,
+    candidateDomains: candidateDomains,
+    findCookieDomain: findCookieDomain,
+    boot: boot,
   };
 });
