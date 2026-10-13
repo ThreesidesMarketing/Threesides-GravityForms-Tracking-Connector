@@ -74,6 +74,10 @@ class GF_Field
     }
 }
 
+class GF_Field_Hidden extends GF_Field
+{
+}
+
 function __($text, $domain = 'default')
 {
     return $text;

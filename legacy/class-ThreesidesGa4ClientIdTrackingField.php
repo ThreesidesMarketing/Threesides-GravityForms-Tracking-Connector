@@ -1,18 +1,18 @@
 <?php
 
-/** UTMs Tracking Field */
+/** GA4 Client ID Tracking Field */
 
 if (! class_exists('GFForms')) {
     die();
 }
 
-class ThreesidesUtmsTrackingField extends GF_Field_Hidden
+class ThreesidesGA4ClientIdTrackingField extends GF_Field_Hidden
 {
 
     /**
      * @var string $type The field type.
      */
-    public $type = 'threesides_utms_tracking_field';
+    public $type = 'threesides_ga4_client_id_tracking_field';
 
     /**
      * Return the field title, for use in the form editor.
@@ -21,12 +21,13 @@ class ThreesidesUtmsTrackingField extends GF_Field_Hidden
      */
     public function get_form_editor_field_title()
     {
-        return esc_attr__('UTMs', 'threesides-gf-tracking-connector');
+        return esc_attr__('GA4 Client ID', 'threesides-gf-tracking-connector');
     }
 
 
     /**
-     * Adds the field button to the specified group.
+     * No editor button: superseded by the Tracking Signals field. The type stays registered so
+     * existing forms and entries keep working.
      *
      * @param array $field_groups The field groups containing the individual field buttons.
      *
@@ -34,9 +35,7 @@ class ThreesidesUtmsTrackingField extends GF_Field_Hidden
      */
     public function add_button($field_groups)
     {
-        $field_groups = $this->maybe_add_field_group($field_groups);
-
-        return parent::add_button($field_groups);
+        return $field_groups;
     }
 
     /**
@@ -106,7 +105,7 @@ class ThreesidesUtmsTrackingField extends GF_Field_Hidden
     public function get_form_editor_inline_script_on_page_render()
     {
         // set the default field label for the simple type field
-        $script = sprintf("function SetDefaultValues_threesides_utms_tracking_field(field) {field.label = '%s';}", $this->get_form_editor_field_title()) . PHP_EOL;
+        $script = sprintf("function SetDefaultValues_threesides_ga4_client_id_tracking_field(field) {field.label = '%s';}", $this->get_form_editor_field_title()) . PHP_EOL;
         return $script;
     }
 
@@ -153,11 +152,11 @@ class ThreesidesUtmsTrackingField extends GF_Field_Hidden
         $input = "<input name='input_{$id}' id='{$field_id}' type='hidden' value='{$value}' class='{$class}' {$tabindex} {$logic_event} {$placeholder_attribute} {$required_attribute} {$invalid_attribute} {$disabled_text}/>";
 
         if ($is_form_editor) :
-            $input = '<p>The UTMs will be collected.</p>';
+            $input = '<p>The GA4 Client ID will be collected.</p>';
         endif;
 
         return sprintf("<div class='ginput_container ginput_container_%s'>%s</div>", $this->type, $input);
     }
 }
 
-GF_Fields::register(new ThreesidesUtmsTrackingField());
+GF_Fields::register(new ThreesidesGA4ClientIdTrackingField());
