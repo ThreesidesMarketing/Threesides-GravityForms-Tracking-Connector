@@ -61,8 +61,8 @@ are never used (GF treats `5.10` as colliding with `5.1`).
 | .1 | `ga_client_id` | GA4 Client ID | `_ga` cookie, last two dot segments |
 | .2 | `ga_session_id` | GA4 Session ID | `_ga_<ID>` cookie (GS1 or GS2) |
 | .3 | `gclid` | GCLID | URL → store → `_gcl_aw` fallback |
-| .4 | `gbraid` | GBRAID | URL → store → `_gcl_gb`/`_gcl_ag` fallback |
-| .5 | `wbraid` | WBRAID | URL → store → `_gcl_gb` fallback |
+| .4 | `gbraid` | GBRAID | URL → store |
+| .5 | `wbraid` | WBRAID | URL → store |
 | .6 | `gad_source` | gad_source | URL (touch group) |
 | .7 | `gad_campaignid` | gad_campaignid | URL (touch group) |
 | .8 | `fbc` | Meta fbc | `_fbc` cookie → constructed from stored fbclid |
@@ -80,8 +80,9 @@ are never used (GF treats `5.10` as colliding with `5.1`).
 | .22 | `referrer` | Referrer | `document.referrer` at touch time (touch group) |
 | .23 | `touch_time` | Touch Timestamp | ISO 8601 UTC at touch time (touch group) |
 
-The registry is passed to the browser with `wp_localize_script`/`wp_add_inline_script` as
-`window.tsmTrackingSignals` (key → input suffix) so JS and PHP never drift.
+PHP renders each front-end input with `data-tsm-signal="<key>"`, and `app.js` keeps its own
+`SIGNAL_KEYS` list. Drift between the two is caught by a unit test that parses the PHP registry
+and asserts the key lists match (no runtime config needs to be printed into the page).
 
 ## Storage (`app.js`)
 
@@ -89,7 +90,11 @@ The registry is passed to the browser with `wp_localize_script`/`wp_add_inline_s
 `max-age=7776000` (90 days), `SameSite=Lax`, `Secure` when on HTTPS. Domain: try the shortest
 registrable domain by writing a probe cookie on progressively longer suffixes of `location.hostname`
 (standard technique — the first suffix that accepts the cookie wins); fall back to host-only.
-Each write refreshes the 90-day expiry.
+The cookie is only written when the state changes (new click ID, new touch, or legacy migration),
+so the 90-day expiry runs from the most recent attributed visit, not the most recent page view.
+If the encoded value exceeds 3,500 characters, the referrer is reduced to its origin, then the
+landing page loses its query string (UTMs are already stored separately), keeping the cookie under
+the browser's 4 KB limit.
 
 **State shape:**
 
@@ -117,7 +122,8 @@ entries are untouched.
 
 **Touch group (last non-direct):** replaced wholesale when the page load has any UTM, any click-ID
 param, `gad_source`/`gad_campaignid`, or a referrer whose hostname is not the current site
-(compared after stripping a leading `www.`). Otherwise (direct or internal navigation) left as is.
+(compared after stripping a leading `www.`; a referrer on a parent domain or subdomain of the
+current host counts as internal). Otherwise (direct or internal navigation) left as is.
 Missing UTMs in a new touch become empty strings — never merged with the previous touch.
 
 **Value hygiene:** values are stored verbatim (no case change, no HTML escaping). URL-ish values
@@ -137,11 +143,13 @@ enquiries keep attribution.
 - **`ga_session_id`:** first cookie matching `_ga_<ALNUM>` (if several, the first found).
   GS1 `GS1.1.<sid>.<num>...` → `<sid>`; GS2 `GS2.1.s<sid>$o<num>$...` → `<sid>`.
 - **`fbp`:** `_fbp` verbatim.
-- **`fbc`:** `_fbc` verbatim if present; else, if stored fbclid exists,
-  `fb.1.<fbclid.ts>.<fbclid.value>`.
-- **Google fallbacks:** if no stored gclid, take the last dot segment of `_gcl_aw`
-  (`GCL.<ts>.<gclid>`). Same for gbraid (`_gcl_ag`, then `_gcl_gb`) and wbraid (`_gcl_gb`).
-  Cookie parsing must split only on the first `=` per cookie pair and `decodeURIComponent` safely.
+- **`fbc`:** if a stored fbclid exists and `_fbc` does not contain it, construct
+  `fb.1.<fbclid.ts>.<fbclid.value>` (our click is newer than the Pixel's); otherwise `_fbc`
+  verbatim (empty if absent).
+- **Google fallback:** if no stored gclid, take everything after `GCL.<ts>.` in `_gcl_aw`.
+  No cookie fallback for gbraid/wbraid: sources disagree on which `_gcl_*` cookie holds which
+  braid, and a wbraid uploaded as a gbraid is rejected. Braids come from the URL only.
+  Cookie parsing splits only on the first `=` per cookie pair; only our own cookie is URL-decoded.
 
 ## Filling fields
 
