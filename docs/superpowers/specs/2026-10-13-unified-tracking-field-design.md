@@ -176,8 +176,8 @@ capture-phase `submit` listener on `form[id^="gform_"]` (so late-set `_ga`/`_fbp
   own checkbox list writing `GetSelectedField().inputs[i].isHidden` — built only if needed.
 - **Defaults:** `get_form_editor_inline_script_on_page_render()` emits
   `SetDefaultValues_threesides_tracking_field(field)` that sets the label and builds
-  `field.inputs` from the registry using core `new Input(field.id + '.N', label)`, also setting a
-  `key` property per input.
+  `field.inputs` from the registry using core `new Input(field.id + '.N', label)`. No extra
+  properties are stored on inputs; the signal key is always derived from the suffix.
 - **`get_entry_inputs()` / `inputs`:** standard; no override needed for submission/emptiness.
 - **`get_field_input()`:**
   - Editor: a short "Collecting: …" summary plus, per input, a visually hidden
