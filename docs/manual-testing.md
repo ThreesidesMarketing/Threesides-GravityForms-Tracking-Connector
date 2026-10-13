@@ -29,10 +29,11 @@ Note the field's ID (shown in the editor); the steps below call it `N`.
       (case preserved), utm_source/medium/campaign, Landing Page (the step 2 URL), Touch Timestamp,
       and GA4 Client ID / Meta fbp if those tags run on the site.
 - [ ] Signals turned off in step 1 are absent from the entry and from the page source.
-- [ ] Repeat with the form set to AJAX submission: same values saved (confirms our submit listener
+- [ ] Repeat with the form set to AJAX submission: same values saved (confirms the click-time fill
       runs before Gravity Forms reads the form).
 - [ ] On a fresh private window, land directly on `/contact?gclid=FIRSTHIT` and submit within a
-      second or two: GA4 Client ID is still captured if GA4 is installed (filled at submit time).
+      second or two: GA4 Client ID is still captured if GA4 is installed (filled when the submit
+      button is clicked). Repeat by pressing Enter in a field instead of clicking.
 
 ## 4. Outputs
 

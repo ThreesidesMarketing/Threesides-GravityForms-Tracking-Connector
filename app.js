@@ -384,13 +384,29 @@
     doc.addEventListener("gform/post_render", fillDocument);
 
     // Re-read cookies at submit: GA4 and the Meta Pixel may set _ga/_fbp after page load.
+    var fillGravityForm = function (form) {
+      if (form && typeof form.id === "string" && form.id.indexOf("gform_") === 0) {
+        fillFields(form, state, readCookies(doc));
+      }
+    };
+
+    // Gravity Forms 2.9+ submits from its buttons' onclick handler and never dispatches a submit
+    // event; a capture-phase click listener runs before that handler. Pressing Enter clicks too.
+    doc.addEventListener(
+      "click",
+      function (event) {
+        var target = event.target;
+        var button = target && target.closest ? target.closest("button, input[type=submit], input[type=image]") : null;
+        fillGravityForm(button && button.form);
+      },
+      true
+    );
+
+    // Gravity Forms' fallback flow (customised buttons) still dispatches a submit event.
     doc.addEventListener(
       "submit",
       function (event) {
-        var form = event.target;
-        if (form && typeof form.id === "string" && form.id.indexOf("gform_") === 0) {
-          fillFields(form, state, readCookies(doc));
-        }
+        fillGravityForm(event.target);
       },
       true
     );

@@ -224,3 +224,29 @@ test("boot still fills from the URL when cookie access throws", () => {
   assert.doesNotThrow(() => app.boot(page.win, page.doc));
   assert.equal(input.value, "G1");
 });
+
+test("boot fills on the submit button click, which is all Gravity Forms 2.9+ dispatches", () => {
+  const page = fakePage(SITE + "/contact");
+  app.boot(page.win, page.doc);
+
+  page.jar.jar._ga = "GA1.1.999.888";
+  const gaInput = fakeInput({ "data-tsm-signal": "ga_client_id" });
+  const form = Object.assign(fakeRoot({ [SIGNAL_SELECTOR]: [gaInput] }), { id: "gform_3" });
+  const label = { closest: () => button };
+  const button = { form, closest: () => button };
+  page.fire("click", { target: label });
+  assert.equal(gaInput.value, "999.888");
+});
+
+test("boot ignores clicks outside Gravity Forms buttons", () => {
+  const page = fakePage(SITE + "/contact");
+  app.boot(page.win, page.doc);
+
+  page.jar.jar._ga = "GA1.1.999.888";
+  const gaInput = fakeInput({ "data-tsm-signal": "ga_client_id" });
+  const otherForm = Object.assign(fakeRoot({ [SIGNAL_SELECTOR]: [gaInput] }), { id: "search" });
+  page.fire("click", { target: { closest: () => ({ form: otherForm }) } });
+  page.fire("click", { target: { closest: () => null } });
+  page.fire("click", { target: {} });
+  assert.equal(gaInput.value, "");
+});
