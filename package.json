@@ -1,0 +1,8 @@
+{
+  "name": "threesides-gf-tracking-connector",
+  "private": true,
+  "description": "Development tooling only: the plugin has no build step or runtime dependencies.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
