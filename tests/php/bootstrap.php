@@ -7,6 +7,9 @@
 
 class GFForms
 {
+    public static function include_addon_framework()
+    {
+    }
 }
 
 class GF_Fields

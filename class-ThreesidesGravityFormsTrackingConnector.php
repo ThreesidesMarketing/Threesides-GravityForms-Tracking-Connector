@@ -39,15 +39,20 @@ class ThreesidesGravityFormsTrackingConnector extends GFAddOn
     {
         parent::pre_init();
 
-        if ($this->is_gravityforms_supported() && class_exists('GF_Field')) {
+        if (! class_exists('GF_Field')) {
+            return;
+        }
+
+        // Superseded by the Tracking Signals field; kept registered so existing forms and entries keep
+        // working. Loaded on any Gravity Forms version: they only need GF_Field_Hidden.
+        require_once(__DIR__ . '/legacy/class-ThreesidesGa4ClientIdTrackingField.php');
+        require_once(__DIR__ . '/legacy/class-ThreesidesFbclidTrackingField.php');
+        require_once(__DIR__ . '/legacy/class-ThreesidesUtmsTrackingField.php');
+        require_once(__DIR__ . '/legacy/class-ThreesidesGclidTrackingField.php');
+
+        if ($this->is_gravityforms_supported()) {
             require_once(__DIR__ . '/class-ThreesidesTrackingSignals.php');
             require_once(__DIR__ . '/class-ThreesidesTrackingField.php');
-
-            // Superseded by the Tracking Signals field; kept registered so existing forms and entries keep working.
-            require_once(__DIR__ . '/legacy/class-ThreesidesGa4ClientIdTrackingField.php');
-            require_once(__DIR__ . '/legacy/class-ThreesidesFbclidTrackingField.php');
-            require_once(__DIR__ . '/legacy/class-ThreesidesUtmsTrackingField.php');
-            require_once(__DIR__ . '/legacy/class-ThreesidesGclidTrackingField.php');
         }
     }
 
@@ -63,7 +68,10 @@ class ThreesidesGravityFormsTrackingConnector extends GFAddOn
     {
         parent::init_admin();
 
-        add_action('gform_field_standard_settings', array('ThreesidesTrackingField', 'render_signals_setting'));
+        // Only loaded on supported Gravity Forms versions (see pre_init).
+        if (class_exists('ThreesidesTrackingField')) {
+            add_action('gform_field_standard_settings', array('ThreesidesTrackingField', 'render_signals_setting'));
+        }
     }
 
     public function init_frontend()

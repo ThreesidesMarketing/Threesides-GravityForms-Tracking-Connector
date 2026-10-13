@@ -62,5 +62,5 @@ this cookie in your privacy policy.
 
 ## Development
 
-`npm test` runs the JavaScript tests (Node 18+) and the PHP field tests (PHP 7.4+ on your PATH).
+`npm test` runs the JavaScript tests (Node 18+) and the PHP tests (PHP 7.4+ on your PATH).
 No dependencies to install. See `docs/manual-testing.md` for the in-WordPress checklist.
