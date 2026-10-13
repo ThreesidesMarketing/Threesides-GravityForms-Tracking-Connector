@@ -115,6 +115,123 @@
     return from !== "" && to !== "" && !isSameSite(from, to);
   }
 
+  // # STATE --------------------------------------------------------------------------------------
+
+  function emptyState() {
+    return { v: 1, clicks: {}, touch: null };
+  }
+
+  function hasData(state) {
+    return Object.keys(state.clicks).length > 0 || state.touch !== null;
+  }
+
+  function blankTouch(now) {
+    var touch = {};
+    TOUCH_KEYS.forEach(function (key) {
+      touch[key] = "";
+    });
+    touch.touch_time = new Date(now).toISOString();
+    return touch;
+  }
+
+  function readParams(url) {
+    try {
+      return new URL(url).searchParams;
+    } catch (e) {
+      return new URLSearchParams("");
+    }
+  }
+
+  function updateState(state, url, referrer, now) {
+    var next = { v: 1, clicks: Object.assign({}, state.clicks), touch: state.touch };
+    var params = readParams(url);
+    var isCampaign = false;
+
+    CLICK_PARAMS.forEach(function (name) {
+      var value = truncate(params.get(name) || "", VALUE_MAX);
+      if (!value) return;
+      isCampaign = true;
+      var existing = next.clicks[name];
+      if (!existing || existing.value !== value) {
+        next.clicks[name] = { value: value, ts: now };
+      }
+    });
+
+    TOUCH_PARAMS.forEach(function (name) {
+      if (params.get(name)) isCampaign = true;
+    });
+
+    if (isCampaign || isExternalReferrer(referrer, url)) {
+      var touch = blankTouch(now);
+      TOUCH_PARAMS.forEach(function (name) {
+        touch[name] = truncate(params.get(name) || "", VALUE_MAX);
+      });
+      touch.landing_page = truncate(url, URL_MAX);
+      touch.referrer = truncate(referrer, URL_MAX);
+      next.touch = touch;
+    }
+
+    return next;
+  }
+
+  function unescapeHtml(value) {
+    return String(value || "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  }
+
+  /** Seeds state from the cookies written by plugin versions before 0.2.0. */
+  function migrateLegacy(cookies, now) {
+    var gclid = truncate(unescapeHtml(cookies._tsm_gclid), VALUE_MAX);
+    var fbclid = truncate(unescapeHtml(cookies._tsm_fbclid), VALUE_MAX);
+    var utm = unescapeHtml(cookies._tsm_utm);
+    if (!gclid && !fbclid && !utm) return null;
+
+    var state = emptyState();
+    if (gclid) state.clicks.gclid = { value: gclid, ts: now };
+    if (fbclid) state.clicks.fbclid = { value: fbclid, ts: now };
+    if (utm) {
+      // Legacy order: source|medium|campaign|content|term.
+      var parts = utm.split("|");
+      state.touch = blankTouch(now);
+      state.touch.utm_source = truncate(parts[0] || "", VALUE_MAX);
+      state.touch.utm_medium = truncate(parts[1] || "", VALUE_MAX);
+      state.touch.utm_campaign = truncate(parts[2] || "", VALUE_MAX);
+      state.touch.utm_content = truncate(parts[3] || "", VALUE_MAX);
+      state.touch.utm_term = truncate(parts[4] || "", VALUE_MAX);
+    }
+    return state;
+  }
+
+  function encodeState(state) {
+    return encodeURIComponent(JSON.stringify(state));
+  }
+
+  /** Encodes state, shrinking URLs if needed so the cookie stays under the browser's 4 KB limit. */
+  function fitState(state) {
+    var encoded = encodeState(state);
+    if (encoded.length <= MAX_COOKIE_LENGTH || state.touch === null) return encoded;
+
+    var touch = Object.assign({}, state.touch, { referrer: originOf(state.touch.referrer) });
+    encoded = encodeState({ v: 1, clicks: state.clicks, touch: touch });
+    if (encoded.length <= MAX_COOKIE_LENGTH) return encoded;
+
+    touch.landing_page = String(touch.landing_page).split(/[?#]/)[0];
+    return encodeState({ v: 1, clicks: state.clicks, touch: touch });
+  }
+
+  function decodeState(raw) {
+    if (!raw) return null;
+    try {
+      var state = JSON.parse(decodeURIComponent(raw));
+      if (!state || state.v !== 1 || typeof state.clicks !== "object" || state.clicks === null) {
+        return null;
+      }
+      var touch = state.touch && typeof state.touch === "object" ? state.touch : null;
+      return { v: 1, clicks: state.clicks, touch: touch };
+    } catch (e) {
+      return null;
+    }
+  }
+
   return {
     COOKIE_NAME: COOKIE_NAME,
     MAX_COOKIE_LENGTH: MAX_COOKIE_LENGTH,
@@ -126,5 +243,12 @@
     parseGclCookie: parseGclCookie,
     truncate: truncate,
     isExternalReferrer: isExternalReferrer,
+    emptyState: emptyState,
+    hasData: hasData,
+    updateState: updateState,
+    migrateLegacy: migrateLegacy,
+    encodeState: encodeState,
+    fitState: fitState,
+    decodeState: decodeState,
   };
 });
