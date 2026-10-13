@@ -102,10 +102,11 @@ check('detail text format', $field->get_value_entry_detail($value, array(), fals
 check('detail empty', $field->get_value_entry_detail(array('5.1' => '')), '');
 check('detail string falls back to parent', $field->get_value_entry_detail('x'), 'PARENT:x');
 
-check('merge tag html', $field->get_value_merge_tag($value, '5', array(), $form, '', $value, false, true, 'html', false), 'GA4 Client ID: 111.222<br />Google Click: G&lt;1&gt;');
-check('merge tag text', $field->get_value_merge_tag($value, '5', array(), $form, '', $value, false, false, 'text', false), "GA4 Client ID: 111.222\nGoogle Click: G<1>");
-check('merge tag url', $field->get_value_merge_tag($value, '5', array(), $form, '', $value, true, false, 'url', false), 'GA4%20Client%20ID%3A%20111.222%0AGoogle%20Click%3A%20G%3C1%3E');
-check('merge tag sub-input uses parent', $field->get_value_merge_tag('G1', '5.3', array(), $form, '', 'G1', false, false, 'text', false), 'PARENT:G1');
+// GFCommon::replace_field_variable passes rgar($raw, '5') (always '') as $value and the array as $raw_value.
+check('merge tag html', $field->get_value_merge_tag('', '5', array(), $form, '', $value, false, true, 'html', false), 'GA4 Client ID: 111.222<br />Google Click: G&lt;1&gt;');
+check('merge tag text', $field->get_value_merge_tag('', '5', array(), $form, '', $value, false, false, 'text', false), "GA4 Client ID: 111.222\nGoogle Click: G<1>");
+check('merge tag url', $field->get_value_merge_tag('', '5', array(), $form, '', $value, true, false, 'url', false), 'GA4%20Client%20ID%3A%20111.222%0AGoogle%20Click%3A%20G%3C1%3E');
+check('merge tag sub-input uses parent', $field->get_value_merge_tag('G1', '5.3', array(), $form, '', $value, false, false, 'text', false), 'PARENT:G1');
 
 $entry = array('5.1' => '111.222', '5.3' => 'G1');
 check('export whole field', $field->get_value_export($entry), 'GA4 Client ID: 111.222; Google Click: G1');

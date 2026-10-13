@@ -408,11 +408,13 @@ class ThreesidesTrackingField extends GF_Field
      */
     public function get_value_merge_tag($value, $input_id, $entry, $form, $modifier, $raw_value, $url_encode, $esc_html, $format, $nl2br)
     {
-        if (! is_array($value)) {
+        // Core passes the whole-field tag's value as rgar($raw_value, '<field id>'), i.e. '', so the
+        // signals have to come from $raw_value.
+        if (! is_array($raw_value) || strpos((string) $input_id, '.') !== false) {
             return parent::get_value_merge_tag($value, $input_id, $entry, $form, $modifier, $raw_value, $url_encode, $esc_html, $format, $nl2br);
         }
 
-        $lines = self::rows_as_lines($this->signal_rows(is_array($raw_value) ? $raw_value : $value));
+        $lines = self::rows_as_lines($this->signal_rows($raw_value));
         foreach ($lines as &$line) {
             if ($url_encode) {
                 $line = rawurlencode($line);
