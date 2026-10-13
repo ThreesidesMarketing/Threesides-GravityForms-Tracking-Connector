@@ -1,7 +1,7 @@
 # Unified Tracking Field — Design
 
 **Date:** 2026-10-13
-**Status:** Approved in conversation; awaiting spec review
+**Status:** Implemented (0.2.0) — pending manual testing per `docs/manual-testing.md`
 **Target version:** 0.2.0
 **Target platform:** Gravity Forms 3.x (latest at time of writing: 3.1.3), PHP 7.4+
 
