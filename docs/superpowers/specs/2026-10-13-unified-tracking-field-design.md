@@ -40,13 +40,13 @@ Existing forms using the old fields must keep working unchanged.
 | File | Change |
 |---|---|
 | `threesides-gf-tracking-connector.php` | Version bump to 0.2.0. |
-| `class-ThreesidesGravityFormsTrackingConnector.php` | Enqueue `app.js` site-wide via `wp_enqueue_scripts` (calling parent `init_frontend`); remove duplicate `scripts()` entry; derive `$_path` from `plugin_basename()`; styles enqueued for the form editor; require new and legacy field classes. |
+| `class-ThreesidesGravityFormsTrackingConnector.php` | Enqueue `app.js` site-wide via `wp_enqueue_scripts` (calling parent `init_frontend`); remove duplicate `scripts()` entry; styles enqueued for the form editor; require new and legacy field classes. |
 | `class-ThreesidesTrackingSignals.php` | **New.** Static registry of signals — single source of truth. |
 | `class-ThreesidesTrackingField.php` | **New.** Multi-input `GF_Field`. |
 | `legacy/class-Threesides*TrackingField.php` | The four existing classes moved here; `add_button()` returns `$field_groups` unchanged (no editor button). Otherwise untouched. |
 | `app.js` | Rewritten: capture, storage, fill (new + legacy fields). Pure logic exported for tests when running under Node. |
 | `app.css` | Add new field type selector. |
-| `tests/app.test.js` | **New.** `node:test` unit tests. |
+| `tests/*.test.js`, `tests/php/*` | **New.** `node:test` unit tests; plain-PHP field tests with WP/GF stand-ins. |
 | `package.json` | **New.** Minimal: `"test": "node --test tests/"`. No dependencies. |
 | `readme.md` | Document the new field, signals list, cookie, legacy note. |
 
@@ -172,8 +172,8 @@ capture-phase `submit` listener on `form[id^="gform_"]` (so late-set `_ga`/`_fbp
   `threesides_tracking_signals_setting` rendered via `gform_field_standard_settings` containing a
   `.custom_inputs_setting` container populated with core `GetCustomizeInputsUI(field)` on
   `gform_load_field_settings`. Core then toggles `inputs[i].isHidden`.
-  Fallback if core UI fails to render (undocumented API): our own checkbox list writing
-  `GetSelectedField().inputs[i].isHidden` and calling `RefreshSelectedFieldPreview()`.
+  If the core UI fails to render on a future GF version (undocumented API), the fallback is our
+  own checkbox list writing `GetSelectedField().inputs[i].isHidden` — built only if needed.
 - **Defaults:** `get_form_editor_inline_script_on_page_render()` emits
   `SetDefaultValues_threesides_tracking_field(field)` that sets the label and builds
   `field.inputs` from the registry using core `new Input(field.id + '.N', label)`, also setting a
@@ -202,10 +202,10 @@ capture-phase `submit` listener on `form[id^="gform_"]` (so late-set `_ga`/`_fbp
 ## Add-on class changes
 
 - `init_frontend()`: call parent; hook `wp_enqueue_scripts` to enqueue `app.js` (no jQuery
-  dependency — the rewrite uses native APIs) and inline `window.tsmTrackingSignals`.
+  dependency — the rewrite uses native APIs).
 - `scripts()`: remove the field-type rule for `app.js` (now site-wide).
 - `styles()`: enqueue `app.css` for `admin_page => ['form_editor']` and new + legacy field types.
-- `$_path`: `plugin_basename( dirname( __FILE__ ) . '/threesides-gf-tracking-connector.php' )`.
+- `$_path`: unchanged — `GFAddOn::update_path()` already corrects a mismatched folder name.
 - `$_min_gravityforms_version`: `2.9` (we rely on the native `gform/post_render` event).
   `get_value_save_input` only exists from 3.0, so the field overrides **both**
   `get_value_save_input` (called by GF 3.x) and `get_value_save_entry` (called by GF 2.9),
@@ -222,7 +222,7 @@ DOM wiring in a guard so requiring it under Node has no side effects. Tests cove
 - cookie parsing (values containing `=`, encoded values, whitespace)
 - `_ga` parsing (GA1.1, GA1.2, malformed)
 - GS1 and GS2 session parsing
-- `_gcl_aw` / `_gcl_gb` parsing
+- `_gcl_aw` parsing
 - fbc construction and `_fbc` preference; fbclid case preserved
 - click-ID update rules (new value replaces, same value keeps ts, other platforms untouched)
 - touch rules (UTM visit replaces wholesale; direct/internal leaves; external referrer replaces;
